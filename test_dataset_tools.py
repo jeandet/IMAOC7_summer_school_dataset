@@ -38,6 +38,23 @@ def test_interpolate_with_gaps_nans_outside_coverage():
     assert np.isfinite(out.values[inside]).all()
 
 
+def test_interpolate_with_gaps_nans_internal_gap():
+    # Two data islands with a multi-day hole between them must NOT be bridged.
+    a = np.arange("2024-06-01", "2024-06-03", np.timedelta64(1, "h"), dtype="datetime64[ns]")
+    b = np.arange("2024-06-20", "2024-06-22", np.timedelta64(1, "h"), dtype="datetime64[ns]")
+    times = np.concatenate([a, b])
+    values = np.ones((len(times), 1))
+    var = SpeasyVariable(axes=[VariableTimeAxis(times)],
+                         values=DataContainer(values), columns=["x"])
+    tv = generate_time_vector("2024/06/01", "2024/06/22", 60. * 5)
+    out = interpolate_with_gaps(tv, var)
+
+    in_gap = (tv > a[-1] + np.timedelta64(2, "h")) & (tv < b[0] - np.timedelta64(2, "h"))
+    on_data = (tv >= a[0]) & (tv <= a[-1])
+    assert np.isnan(out.values[in_gap]).all()      # hole stays empty, no ramp
+    assert np.isfinite(out.values[on_data]).all()   # real data preserved
+
+
 def test_replace_fillval_masks_sentinels():
     # OMNI CDFs declare FILLVAL (e.g. 9999.99) that must become NaN, not a real number.
     times = np.arange("2024-01-01", "2024-01-01T05", np.timedelta64(1, "h"),
