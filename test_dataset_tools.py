@@ -36,3 +36,17 @@ def test_interpolate_with_gaps_nans_outside_coverage():
 
     assert np.isnan(out.values[outside]).all()
     assert np.isfinite(out.values[inside]).all()
+
+
+def test_replace_fillval_masks_sentinels():
+    # OMNI CDFs declare FILLVAL (e.g. 9999.99) that must become NaN, not a real number.
+    times = np.arange("2024-01-01", "2024-01-01T05", np.timedelta64(1, "h"),
+                      dtype="datetime64[ns]")
+    values = np.array([1.0, 9999.99, 2.0, 9999.99, 3.0])[:, None]
+    var = SpeasyVariable(axes=[VariableTimeAxis(times)],
+                         values=DataContainer(values, meta={"FILLVAL": [9999.99]}),
+                         columns=["b"])
+    out = var.replace_fillval_by_nan()
+    v = np.asarray(out.values).flatten()
+    assert np.isnan(v[[1, 3]]).all()
+    assert np.allclose(v[[0, 2, 4]], [1.0, 2.0, 3.0])
