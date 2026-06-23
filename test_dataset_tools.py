@@ -1,0 +1,38 @@
+import numpy as np
+
+from speasy.products import SpeasyVariable, DataContainer, VariableTimeAxis
+from speasy.signal.resampling import generate_time_vector, interpolate as spz_interpolate
+
+from dataset_tools import interpolate_with_gaps
+
+
+def _short_variable() -> SpeasyVariable:
+    """A variable covering only 2024-06-01 .. 2024-06-10, hourly."""
+    times = np.arange("2024-06-01", "2024-06-10", np.timedelta64(1, "h"),
+                      dtype="datetime64[ns]")
+    values = np.tile(np.arange(len(times), dtype=float)[:, None], (1, 3))
+    return SpeasyVariable(axes=[VariableTimeAxis(times)],
+                          values=DataContainer(values),
+                          columns=["x", "y", "z"])
+
+
+def test_plain_interpolate_flatlines_outside_coverage():
+    # Documents the bug: np.interp holds edge values constant outside [t0, t1].
+    var = _short_variable()
+    tv = generate_time_vector("2024/01/01", "2025/01/01", 60. * 5)
+    out = spz_interpolate(tv, var)
+    before = tv < var.time.min()
+    assert np.isfinite(out.values[before]).all()
+    assert np.unique(out.values[before, 0]).size == 1  # frozen flat line
+
+
+def test_interpolate_with_gaps_nans_outside_coverage():
+    var = _short_variable()
+    tv = generate_time_vector("2024/01/01", "2025/01/01", 60. * 5)
+    out = interpolate_with_gaps(tv, var)
+
+    outside = (tv < var.time.min()) | (tv > var.time.max())
+    inside = ~outside
+
+    assert np.isnan(out.values[outside]).all()
+    assert np.isfinite(out.values[inside]).all()
