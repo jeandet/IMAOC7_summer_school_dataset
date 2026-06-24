@@ -18,7 +18,8 @@ from speasy.products.variable import merge
 from speasy.signal.resampling import generate_time_vector
 
 from dataset_tools import (COLUMN_RENAME, bin_average, fetch_resampled_chunked,
-                           fetch_mms1_fgm_b_gse, interpolate_with_gaps, load_ground_mag)
+                           fetch_mms1_fgm_b_gse, fill_short_gaps, interpolate_with_gaps,
+                           load_ground_mag)
 import make_overview_plots
 
 START, STOP, INTERVAL = "2024/01/01", "2026/01/01", 60. * 5
@@ -88,6 +89,7 @@ def rebuild_dataset():
     if unmapped:
         raise KeyError(f"columns missing from COLUMN_RENAME: {unmapped}")
     df = df.rename(columns=COLUMN_RENAME)
+    df = fill_short_gaps(df, max_bins=2)   # bridge gaps <= 10 min; longer stay NaN
 
     df.to_pickle("IMAOC7_summer_school_dataset.pkl")
     df.to_csv("IMAOC7_summer_school_dataset.csv")

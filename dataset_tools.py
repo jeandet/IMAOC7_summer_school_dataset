@@ -39,6 +39,19 @@ COLUMN_RENAME = {
 }
 
 
+def fill_short_gaps(df: pd.DataFrame, max_bins: int = 2) -> pd.DataFrame:
+    """Linearly interpolate across internal gaps of at most ``max_bins`` consecutive
+    missing samples (≤10 min on the 5-min grid); longer gaps stay NaN. Leading and
+    trailing NaN (outside a column's coverage) are never filled.
+    """
+    out = df.interpolate(method="linear", limit_area="inside")
+    for col in df.columns:
+        na = df[col].isna()
+        run = na.groupby((na != na.shift()).cumsum()).transform("size")
+        out.loc[na & (run > max_bins), col] = np.nan
+    return out
+
+
 def interpolate_with_gaps(time_vector: np.ndarray, var: SpeasyVariable,
                           max_gap: np.timedelta64 = np.timedelta64(1, "h")) -> SpeasyVariable:
     """Interpolate ``var`` onto ``time_vector`` while preserving missing coverage.

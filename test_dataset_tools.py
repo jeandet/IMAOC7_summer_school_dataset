@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from speasy.products import SpeasyVariable, DataContainer, VariableTimeAxis
 from speasy.signal.resampling import generate_time_vector, interpolate as spz_interpolate
@@ -72,6 +73,26 @@ def test_bin_average_nan_aware_and_grid_aligned():
     assert np.isnan(o[1])                            # empty bin stays NaN
     assert np.isclose(o[2], np.mean([10, 11, 12, 13, 14]))
     assert str(out.time[0]) == "2024-01-01T00:00:00.000000000"  # grid-aligned
+
+
+def test_fill_short_gaps_bridges_short_keeps_long():
+    from dataset_tools import fill_short_gaps
+    idx = pd.date_range("2024-01-01", periods=12, freq="5min")
+    #            0   1    2(gap1) 3   4   5    6(gap2) 7      8(gap3)         9   10  11
+    s = [0., 1., np.nan, 3., 4., np.nan, np.nan, 7., np.nan, np.nan, np.nan, 11.]
+    out = fill_short_gaps(pd.DataFrame({"x": s}, index=idx), max_bins=2)["x"]
+
+    assert out.iloc[2] == 2.0                  # 1-bin gap -> filled
+    assert out.iloc[5] == 5.0 and out.iloc[6] == 6.0   # 2-bin gap -> filled
+    assert out.iloc[8:11].isna().all()         # 3-bin gap (>max) -> stays NaN
+
+
+def test_fill_short_gaps_never_fills_edges():
+    from dataset_tools import fill_short_gaps
+    idx = pd.date_range("2024-01-01", periods=5, freq="5min")
+    s = [np.nan, np.nan, 2., 3., np.nan]       # leading + trailing NaN
+    out = fill_short_gaps(pd.DataFrame({"x": s}, index=idx), max_bins=2)["x"]
+    assert out.iloc[:2].isna().all() and np.isnan(out.iloc[4])
 
 
 def test_column_rename_is_csv_safe_and_unique():
