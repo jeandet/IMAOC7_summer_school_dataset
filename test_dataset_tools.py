@@ -55,6 +55,25 @@ def test_interpolate_with_gaps_nans_internal_gap():
     assert np.isfinite(out.values[on_data]).all()   # real data preserved
 
 
+def test_bin_average_nan_aware_and_grid_aligned():
+    from dataset_tools import bin_average
+    times = np.arange("2024-01-01", "2024-01-01T00:20", np.timedelta64(1, "m"),
+                      dtype="datetime64[ns]")  # 20 one-minute samples -> four 5-min bins
+    vals = np.arange(20, dtype=float)[:, None]
+    vals[2] = np.nan        # scattered hole in bin 0 -> averaged away, bin stays valid
+    vals[5:10] = np.nan     # bin 1 entirely empty -> NaN, not bridged
+    var = SpeasyVariable(axes=[VariableTimeAxis(times)],
+                         values=DataContainer(vals), columns=["x"])
+    out = bin_average(var, 300., "2024-01-01")
+    o = np.asarray(out.values).flatten()
+
+    assert len(o) == 4
+    assert np.isclose(o[0], np.mean([0, 1, 3, 4]))   # NaN-aware mean
+    assert np.isnan(o[1])                            # empty bin stays NaN
+    assert np.isclose(o[2], np.mean([10, 11, 12, 13, 14]))
+    assert str(out.time[0]) == "2024-01-01T00:00:00.000000000"  # grid-aligned
+
+
 def test_replace_fillval_masks_sentinels():
     # OMNI CDFs declare FILLVAL (e.g. 9999.99) that must become NaN, not a real number.
     times = np.arange("2024-01-01", "2024-01-01T05", np.timedelta64(1, "h"),

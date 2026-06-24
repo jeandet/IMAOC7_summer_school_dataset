@@ -12,7 +12,7 @@ import speasy as spz
 from speasy.core import AnyDateTimeType, make_utc_datetime
 from speasy.products import SpeasyVariable, DataContainer, VariableTimeAxis
 from speasy.products.variable import merge
-from speasy.signal.resampling import resample as spz_resample, interpolate as spz_interpolate
+from speasy.signal.resampling import interpolate as spz_interpolate
 
 
 def interpolate_with_gaps(time_vector: np.ndarray, var: SpeasyVariable,
@@ -38,6 +38,29 @@ def interpolate_with_gaps(time_vector: np.ndarray, var: SpeasyVariable,
     return out
 
 
+def bin_average(var: SpeasyVariable, interval_s: float,
+                origin: AnyDateTimeType) -> SpeasyVariable:
+    """Downsample to a regular ``interval_s`` grid by the NaN-aware mean of the samples
+    in each ``[t, t+interval)`` bin, aligned to ``origin``. An empty bin becomes NaN.
+
+    Unlike interpolation-based resampling this neither propagates scattered short gaps
+    (which would over-count missing data, e.g. OMNI's 1-min plasma holes) nor bridges
+    real multi-sample gaps with a ramp (which would hide them, e.g. MMS FPI orbit gaps).
+    Bins are aligned to ``origin`` so every source lands on the same global grid.
+    """
+    times = pd.to_datetime(var.time)
+    origin_ts = pd.Timestamp(origin)
+    if origin_ts.tzinfo is not None:          # index is tz-naive UTC; match it
+        origin_ts = origin_ts.tz_localize(None)
+    df = pd.DataFrame(np.asarray(var.values, dtype=float), index=times)
+    binned = df.resample(f"{int(interval_s)}s", origin=origin_ts).mean()
+    return SpeasyVariable(
+        axes=[VariableTimeAxis(binned.index.values.astype("datetime64[ns]"))],
+        values=DataContainer(binned.values, name=var.name),
+        columns=list(var.columns),
+    )
+
+
 def fetch_resampled_chunked(uid: str, start: AnyDateTimeType, stop: AnyDateTimeType,
                             interval: float, chunk_days: int = 7,
                             mask_fill: bool = True) -> SpeasyVariable | None:
@@ -57,7 +80,7 @@ def fetch_resampled_chunked(uid: str, start: AnyDateTimeType, stop: AnyDateTimeT
         if r is not None and len(r.time):
             if mask_fill:
                 r = r.replace_fillval_by_nan()
-            chunks.append(spz_resample(r, interval))
+            chunks.append(bin_average(r, interval, start))
         t = t_next
     return merge(chunks) if chunks else None
 
