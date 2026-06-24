@@ -17,8 +17,8 @@ from speasy.products import Dataset
 from speasy.products.variable import merge
 from speasy.signal.resampling import generate_time_vector
 
-from dataset_tools import (bin_average, fetch_resampled_chunked, fetch_mms1_fgm_b_gse,
-                           interpolate_with_gaps, load_ground_mag)
+from dataset_tools import (COLUMN_RENAME, bin_average, fetch_resampled_chunked,
+                           fetch_mms1_fgm_b_gse, interpolate_with_gaps, load_ground_mag)
 import make_overview_plots
 
 START, STOP, INTERVAL = "2024/01/01", "2026/01/01", 60. * 5
@@ -83,6 +83,12 @@ def rebuild_dataset():
                 _df.columns = [f"{p}_{l}" for l in _df.columns]
             df = pd.concat([df, _df], axis=1)
         log(f"       merged {fname}")
+
+    unmapped = [c for c in df.columns if c not in COLUMN_RENAME]
+    if unmapped:
+        raise KeyError(f"columns missing from COLUMN_RENAME: {unmapped}")
+    df = df.rename(columns=COLUMN_RENAME)
+
     df.to_pickle("IMAOC7_summer_school_dataset.pkl")
     df.to_csv("IMAOC7_summer_school_dataset.csv")
     log("       wrote IMAOC7_summer_school_dataset.{pkl,csv}")

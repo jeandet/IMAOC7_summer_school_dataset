@@ -15,6 +15,30 @@ from speasy.products.variable import merge
 from speasy.signal.resampling import interpolate as spz_interpolate
 
 
+# Clean, CSV-safe column names (no spaces/commas) for the assembled dataset.
+# The raw speasy-derived names (e.g. "Vx_Vx Velocity, GSE") embed commas, which
+# break naive CSV parsers. Frames: THEMIS/MMS velocities are GSE, THEMIS B is GSM.
+COLUMN_RENAME = {
+    "proton_density_Proton density": "omni_n", "Pressure_Flow pressure": "omni_pdyn",
+    "T_temperature": "omni_t",
+    "Vx_Vx Velocity, GSE": "omni_vx_gse", "Vy_Vy Velocity, GSE": "omni_vy_gse",
+    "Vz_Vz Velocity, GSE": "omni_vz_gse",
+    "BX_GSE_Bx, GSE": "omni_bx_gse", "BY_GSE_By, GSE": "omni_by_gse",
+    "BZ_GSE_Bz, GSE": "omni_bz_gse",
+    "tha_bs_gsm_bx": "tha_bx_gsm", "tha_bs_gsm_by": "tha_by_gsm", "tha_bs_gsm_bz": "tha_bz_gsm",
+    "tha_v_i_vx": "tha_vx_gse", "tha_v_i_vy": "tha_vy_gse", "tha_v_i_vz": "tha_vz_gse",
+    "tha_n_i_ion density": "tha_n",
+    "thb_bs_gsm_bx": "thb_bx_gsm", "thb_bs_gsm_by": "thb_by_gsm", "thb_bs_gsm_bz": "thb_bz_gsm",
+    "thb_v_i_vx": "thb_vx_gse", "thb_v_i_vy": "thb_vy_gse", "thb_v_i_vz": "thb_vz_gse",
+    "thb_n_i_ion density": "thb_n",
+    "mms1_b_gse_bx": "mms1_bx_gse", "mms1_b_gse_by": "mms1_by_gse", "mms1_b_gse_bz": "mms1_bz_gse",
+    "mms1_dis_vgse_vx": "mms1_vx_gse", "mms1_dis_vgse_vy": "mms1_vy_gse",
+    "mms1_dis_vgse_vz": "mms1_vz_gse", "mms1_dis_ni_density": "mms1_n",
+    **{f"{st}{c}": f"{st.lower()}_{c.lower()}"
+       for st in ("TAM", "SOK", "EDA", "CLF", "KOU", "IPM", "PPT") for c in "XYZF"},
+}
+
+
 def interpolate_with_gaps(time_vector: np.ndarray, var: SpeasyVariable,
                           max_gap: np.timedelta64 = np.timedelta64(1, "h")) -> SpeasyVariable:
     """Interpolate ``var`` onto ``time_vector`` while preserving missing coverage.

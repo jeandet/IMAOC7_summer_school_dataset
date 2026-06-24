@@ -74,6 +74,16 @@ def test_bin_average_nan_aware_and_grid_aligned():
     assert str(out.time[0]) == "2024-01-01T00:00:00.000000000"  # grid-aligned
 
 
+def test_column_rename_is_csv_safe_and_unique():
+    from dataset_tools import COLUMN_RENAME
+    vals = list(COLUMN_RENAME.values())
+    assert len(vals) == 58
+    assert len(set(vals)) == 58                       # no collisions
+    assert all(" " not in v and "," not in v for v in vals)  # CSV-safe
+    assert all("," not in k or k.startswith(("Vx", "Vy", "Vz", "BX", "BY", "BZ"))
+               for k in COLUMN_RENAME)                # only OMNI raw names carry commas
+
+
 def test_replace_fillval_masks_sentinels():
     # OMNI CDFs declare FILLVAL (e.g. 9999.99) that must become NaN, not a real number.
     times = np.arange("2024-01-01", "2024-01-01T05", np.timedelta64(1, "h"),

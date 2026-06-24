@@ -16,21 +16,20 @@ PLOTS.mkdir(exist_ok=True)
 
 # (group label, [(column, short label), ...]) — drives both figures.
 GROUPS = [
-    ("OMNI", [("proton_density_Proton density", "ni"), ("Pressure_Flow pressure", "Pdyn"),
-              ("T_temperature", "T"), ("Vx_Vx Velocity, GSE", "Vx"),
-              ("Vy_Vy Velocity, GSE", "Vy"), ("Vz_Vz Velocity, GSE", "Vz"),
-              ("BX_GSE_Bx, GSE", "Bx"), ("BY_GSE_By, GSE", "By"), ("BZ_GSE_Bz, GSE", "Bz")]),
-    ("THEMIS-A", [("tha_bs_gsm_bx", "Bx"), ("tha_bs_gsm_by", "By"), ("tha_bs_gsm_bz", "Bz"),
-                  ("tha_v_i_vx", "Vx"), ("tha_v_i_vy", "Vy"), ("tha_v_i_vz", "Vz"),
-                  ("tha_n_i_ion density", "ni")]),
-    ("THEMIS-B", [("thb_bs_gsm_bx", "Bx"), ("thb_bs_gsm_by", "By"), ("thb_bs_gsm_bz", "Bz"),
-                  ("thb_v_i_vx", "Vx"), ("thb_v_i_vy", "Vy"), ("thb_v_i_vz", "Vz"),
-                  ("thb_n_i_ion density", "ni")]),
-    ("MMS1", [("mms1_b_gse_bx", "Bx"), ("mms1_b_gse_by", "By"), ("mms1_b_gse_bz", "Bz"),
-              ("mms1_dis_vgse_vx", "Vx"), ("mms1_dis_vgse_vy", "Vy"),
-              ("mms1_dis_vgse_vz", "Vz"), ("mms1_dis_ni_density", "ni")]),
+    ("OMNI", [("omni_n", "ni"), ("omni_pdyn", "Pdyn"), ("omni_t", "T"),
+              ("omni_vx_gse", "Vx"), ("omni_vy_gse", "Vy"), ("omni_vz_gse", "Vz"),
+              ("omni_bx_gse", "Bx"), ("omni_by_gse", "By"), ("omni_bz_gse", "Bz")]),
+    ("THEMIS-A", [("tha_bx_gsm", "Bx"), ("tha_by_gsm", "By"), ("tha_bz_gsm", "Bz"),
+                  ("tha_vx_gse", "Vx"), ("tha_vy_gse", "Vy"), ("tha_vz_gse", "Vz"),
+                  ("tha_n", "ni")]),
+    ("THEMIS-B", [("thb_bx_gsm", "Bx"), ("thb_by_gsm", "By"), ("thb_bz_gsm", "Bz"),
+                  ("thb_vx_gse", "Vx"), ("thb_vy_gse", "Vy"), ("thb_vz_gse", "Vz"),
+                  ("thb_n", "ni")]),
+    ("MMS1", [("mms1_bx_gse", "Bx"), ("mms1_by_gse", "By"), ("mms1_bz_gse", "Bz"),
+              ("mms1_vx_gse", "Vx"), ("mms1_vy_gse", "Vy"), ("mms1_vz_gse", "Vz"),
+              ("mms1_n", "ni")]),
 ]
-GROUPS += [(st, [(f"{st}{c}", c) for c in "XYZF"])
+GROUPS += [(st, [(f"{st.lower()}_{c}", c.upper()) for c in "xyzf"])
            for st in ("TAM", "SOK", "EDA", "CLF", "KOU", "IPM", "PPT")]
 
 
@@ -52,7 +51,6 @@ def coverage_heatmap(df):
 
     ax.set_yticks(np.arange(len(cols)) + 0.5)
     ax.set_yticklabels(labels, fontsize=7)
-    # group separators
     row = 0
     for _, items in GROUPS[:-1]:
         row += len(items)
@@ -72,11 +70,11 @@ def magnitude(df, cols):
 def overview_timeseries(df):
     h = df.resample("1h").mean()  # lighten the plot; NaN gaps preserved
     panels = [
-        ("OMNI |B| (nT)", magnitude(h, ["BX_GSE_Bx, GSE", "BY_GSE_By, GSE", "BZ_GSE_Bz, GSE"]), False),
-        ("THEMIS-A |B| (nT)", magnitude(h, ["tha_bs_gsm_bx", "tha_bs_gsm_by", "tha_bs_gsm_bz"]), False),
-        ("THEMIS-B |B| (nT)", magnitude(h, ["thb_bs_gsm_bx", "thb_bs_gsm_by", "thb_bs_gsm_bz"]), False),
-        ("MMS1 |B| (nT, log)", magnitude(h, ["mms1_b_gse_bx", "mms1_b_gse_by", "mms1_b_gse_bz"]), True),
-        ("MMS1 ion density (cm⁻³)", h["mms1_dis_ni_density"], False),
+        ("OMNI |B| (nT)", magnitude(h, ["omni_bx_gse", "omni_by_gse", "omni_bz_gse"]), False),
+        ("THEMIS-A |B| (nT)", magnitude(h, ["tha_bx_gsm", "tha_by_gsm", "tha_bz_gsm"]), False),
+        ("THEMIS-B |B| (nT)", magnitude(h, ["thb_bx_gsm", "thb_by_gsm", "thb_bz_gsm"]), False),
+        ("MMS1 |B| (nT, log)", magnitude(h, ["mms1_bx_gse", "mms1_by_gse", "mms1_bz_gse"]), True),
+        ("MMS1 ion density (cm⁻³)", h["mms1_n"], False),
     ]
     fig, axes = plt.subplots(len(panels) + 1, 1, figsize=(15, 14), sharex=True)
     for ax, (label, series, logy) in zip(axes, panels):
@@ -87,7 +85,7 @@ def overview_timeseries(df):
         ax.grid(alpha=0.3)
     ax = axes[-1]
     for st in ("TAM", "SOK", "EDA", "CLF", "KOU", "IPM", "PPT"):
-        ax.plot(h.index, h[f"{st}F"].values, lw=0.4, label=st)
+        ax.plot(h.index, h[f"{st.lower()}_f"].values, lw=0.4, label=st)
     ax.set_ylabel("Ground |F| (nT)", fontsize=9)
     ax.legend(ncol=7, fontsize=7, loc="upper right")
     ax.grid(alpha=0.3)
@@ -102,7 +100,7 @@ def overview_timeseries(df):
 
 def main():
     df = pd.read_pickle("IMAOC7_summer_school_dataset.pkl")
-    daily = coverage_heatmap(df)
+    coverage_heatmap(df)
     overview_timeseries(df)
     overall = df.notna().mean().rename("coverage")
     print("Overall coverage by group:")

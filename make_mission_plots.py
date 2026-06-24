@@ -18,29 +18,29 @@ PLOTS.mkdir(exist_ok=True)
 # Per mission: list of panels (ylabel, {series label: column}, logy).
 MISSIONS = {
     "OMNI": [
-        ("B GSE (nT)", {"Bx": "BX_GSE_Bx, GSE", "By": "BY_GSE_By, GSE", "Bz": "BZ_GSE_Bz, GSE"}, False),
-        ("V GSE (km/s)", {"Vx": "Vx_Vx Velocity, GSE", "Vy": "Vy_Vy Velocity, GSE", "Vz": "Vz_Vz Velocity, GSE"}, False),
-        ("ni (cm⁻³)", {"ni": "proton_density_Proton density"}, False),
-        ("Pdyn (nPa)", {"Pdyn": "Pressure_Flow pressure"}, False),
-        ("T (K)", {"T": "T_temperature"}, True),
+        ("B GSE (nT)", {"Bx": "omni_bx_gse", "By": "omni_by_gse", "Bz": "omni_bz_gse"}, False),
+        ("V GSE (km/s)", {"Vx": "omni_vx_gse", "Vy": "omni_vy_gse", "Vz": "omni_vz_gse"}, False),
+        ("ni (cm⁻³)", {"ni": "omni_n"}, False),
+        ("Pdyn (nPa)", {"Pdyn": "omni_pdyn"}, False),
+        ("T (K)", {"T": "omni_t"}, True),
     ],
     "THEMIS-A": [
-        ("B GSM (nT)", {"Bx": "tha_bs_gsm_bx", "By": "tha_bs_gsm_by", "Bz": "tha_bs_gsm_bz"}, False),
-        ("Vi GSE (km/s)", {"Vx": "tha_v_i_vx", "Vy": "tha_v_i_vy", "Vz": "tha_v_i_vz"}, False),
-        ("ni (cm⁻³)", {"ni": "tha_n_i_ion density"}, False),
+        ("B GSM (nT)", {"Bx": "tha_bx_gsm", "By": "tha_by_gsm", "Bz": "tha_bz_gsm"}, False),
+        ("Vi GSE (km/s)", {"Vx": "tha_vx_gse", "Vy": "tha_vy_gse", "Vz": "tha_vz_gse"}, False),
+        ("ni (cm⁻³)", {"ni": "tha_n"}, False),
     ],
     "THEMIS-B": [
-        ("B GSM (nT)", {"Bx": "thb_bs_gsm_bx", "By": "thb_bs_gsm_by", "Bz": "thb_bs_gsm_bz"}, False),
-        ("Vi GSE (km/s)", {"Vx": "thb_v_i_vx", "Vy": "thb_v_i_vy", "Vz": "thb_v_i_vz"}, False),
-        ("ni (cm⁻³)", {"ni": "thb_n_i_ion density"}, False),
+        ("B GSM (nT)", {"Bx": "thb_bx_gsm", "By": "thb_by_gsm", "Bz": "thb_bz_gsm"}, False),
+        ("Vi GSE (km/s)", {"Vx": "thb_vx_gse", "Vy": "thb_vy_gse", "Vz": "thb_vz_gse"}, False),
+        ("ni (cm⁻³)", {"ni": "thb_n"}, False),
     ],
     "MMS1": [
-        ("B GSE (nT)", {"Bx": "mms1_b_gse_bx", "By": "mms1_b_gse_by", "Bz": "mms1_b_gse_bz"}, False),
-        ("Vi GSE (km/s)", {"Vx": "mms1_dis_vgse_vx", "Vy": "mms1_dis_vgse_vy", "Vz": "mms1_dis_vgse_vz"}, False),
-        ("ni (cm⁻³)", {"ni": "mms1_dis_ni_density"}, False),
+        ("B GSE (nT)", {"Bx": "mms1_bx_gse", "By": "mms1_by_gse", "Bz": "mms1_bz_gse"}, False),
+        ("Vi GSE (km/s)", {"Vx": "mms1_vx_gse", "Vy": "mms1_vy_gse", "Vz": "mms1_vz_gse"}, False),
+        ("ni (cm⁻³)", {"ni": "mms1_n"}, False),
     ],
     "GROUND": [
-        (f"{st} (nT)", {"X": f"{st}X", "Y": f"{st}Y", "Z": f"{st}Z"}, False)
+        (f"{st} (nT)", {"X": f"{st.lower()}_x", "Y": f"{st.lower()}_y", "Z": f"{st.lower()}_z"}, False)
         for st in ("TAM", "SOK", "EDA", "CLF", "KOU", "IPM", "PPT")
     ],
 }
